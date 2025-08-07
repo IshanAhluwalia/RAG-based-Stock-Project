@@ -11,8 +11,9 @@ A real-time stock analysis system that scrapes financial news from Yahoo Finance
 
 - ✅ **Real-time scraping** from Yahoo Finance, MarketWatch, and Seeking Alpha
 - ✅ **RAG-powered analysis** using most relevant financial information  
-- ✅ **AI-generated comprehensive analysis** with professional investment language
-- ✅ **Beautiful web interface** with modern, responsive design
+- ✅ **AI-generated categorized analysis** across 5 focused sections
+- ✅ **Intelligent content categorization** (Expert Analysis, Financial Performance, Company News, Market Sentiment, Risk Assessment)
+- ✅ **Beautiful web interface** with modern, responsive card-based design
 - ✅ **Source attribution** with transparent data sourcing
 - ✅ **Quick analysis** for popular stocks (AAPL, GOOGL, TSLA, etc.)
 
@@ -84,11 +85,12 @@ A real-time stock analysis system that scrapes financial news from Yahoo Finance
 
 ## 📝 Example Analysis
 
-The system generates comprehensive paragraphs covering:
-- Current market sentiment and performance
-- Recent financial developments and earnings
-- Investment opportunities and risks
-- Professional recommendations with source attribution
+The system generates categorized analysis across 5 sections:
+- 🎯 **Expert Analysis & Outlook**: Professional recommendations, target prices, analyst ratings
+- 📊 **Financial Performance**: Earnings, revenue, profitability metrics
+- 📰 **Latest Company News**: Recent announcements, partnerships, corporate actions
+- 📈 **Market Sentiment**: Investor confidence, market expectations
+- ⚠️ **Risk Assessment**: Potential risks, challenges, threat analysis
 
 ## 🤝 Contributing
 
