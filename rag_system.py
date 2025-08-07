@@ -460,70 +460,161 @@ class StockRAGSystem:
         
         return relevant_docs
     
-    def generate_analysis(self, stock_symbol: str, relevant_docs: List[Dict]) -> str:
-        """Generate stock analysis using retrieved documents"""
-        if not relevant_docs:
-            return f"Unable to retrieve sufficient information for {stock_symbol} analysis from financial sources."
+    def categorize_documents(self, documents: List[Dict]) -> Dict[str, List[Dict]]:
+        """Categorize documents into different sections based on content analysis"""
+        categories = {
+            'expert_analysis': [],
+            'company_news': [],
+            'financial_performance': [],
+            'market_sentiment': [],
+            'risk_assessment': []
+        }
         
-        # Prepare context from relevant documents
-        context = ""
+        for doc in documents:
+            content_lower = f"{doc['title']} {doc['content']}".lower()
+            
+            # Keywords for each category
+            expert_keywords = ['analysis', 'recommendation', 'outlook', 'investment', 'target price', 'rating', 'upgrade', 'downgrade', 'analyst', 'forecast']
+            news_keywords = ['announced', 'launch', 'partnership', 'acquisition', 'merger', 'ceo', 'executive', 'product', 'service', 'expansion']
+            financial_keywords = ['earnings', 'revenue', 'profit', 'loss', 'eps', 'quarterly', 'financial results', 'sales', 'income', 'margin']
+            sentiment_keywords = ['bullish', 'bearish', 'optimistic', 'pessimistic', 'confidence', 'sentiment', 'mood', 'outlook', 'expectations']
+            risk_keywords = ['risk', 'concern', 'challenge', 'threat', 'volatility', 'uncertainty', 'decline', 'drop', 'fall', 'warning']
+            
+            # Score each category
+            scores = {
+                'expert_analysis': sum(1 for keyword in expert_keywords if keyword in content_lower),
+                'company_news': sum(1 for keyword in news_keywords if keyword in content_lower),
+                'financial_performance': sum(1 for keyword in financial_keywords if keyword in content_lower),
+                'market_sentiment': sum(1 for keyword in sentiment_keywords if keyword in content_lower),
+                'risk_assessment': sum(1 for keyword in risk_keywords if keyword in content_lower)
+            }
+            
+            # Assign to category with highest score, or default to company_news
+            best_category = max(scores.items(), key=lambda x: x[1])
+            if best_category[1] > 0:
+                categories[best_category[0]].append(doc)
+            else:
+                categories['company_news'].append(doc)  # Default category
+        
+        return categories
+
+    def generate_categorized_analysis(self, stock_symbol: str, categorized_docs: Dict[str, List[Dict]]) -> Dict[str, str]:
+        """Generate analysis for each category"""
+        analyses = {}
         sources_used = set()
         
-        for doc in relevant_docs:
-            context += f"Source: {doc['source']}\nHeadline: {doc['title']}\nContent: {doc['content']}\n\n"
-            sources_used.add(doc['source'])
+        # Collect all sources used
+        for category_docs in categorized_docs.values():
+            for doc in category_docs:
+                sources_used.add(doc['source'])
         
         sources_list = ", ".join(sources_used)
         
-        prompt = f"""
-        Based on the following recent financial news and analysis about {stock_symbol} from reputable sources ({sources_list}), 
-        provide a comprehensive analysis of the stock's current position in a single, flowing paragraph format.
+        # Category configurations
+        category_configs = {
+            'expert_analysis': {
+                'title': 'Expert Analysis & Outlook',
+                'prompt': f"Based on analyst reports and expert opinions about {stock_symbol}, provide a comprehensive expert analysis focusing on professional recommendations, target prices, ratings, and investment outlook. Include specific analyst views and price targets where mentioned.",
+                'icon': '🎯'
+            },
+            'company_news': {
+                'title': 'Latest Company News',
+                'prompt': f"Based on recent company news about {stock_symbol}, summarize the most important developments, announcements, partnerships, and corporate actions. Focus on how these developments might impact the company's future.",
+                'icon': '📰'
+            },
+            'financial_performance': {
+                'title': 'Financial Performance',
+                'prompt': f"Based on financial data and earnings reports for {stock_symbol}, analyze the company's financial performance including revenue, earnings, profitability metrics, and financial health indicators.",
+                'icon': '📊'
+            },
+            'market_sentiment': {
+                'title': 'Market Sentiment',
+                'prompt': f"Based on market commentary about {stock_symbol}, analyze the overall market sentiment, investor confidence, and market expectations. Include any mentions of bullish/bearish sentiment.",
+                'icon': '📈'
+            },
+            'risk_assessment': {
+                'title': 'Risk Assessment',
+                'prompt': f"Based on risk-related information about {stock_symbol}, identify and analyze potential risks, challenges, concerns, and threats facing the company. Include both short-term and long-term risk factors.",
+                'icon': '⚠️'
+            }
+        }
         
-        Recent Financial News and Analysis:
-        {context}
-        
-        Write a detailed paragraph (300-400 words) that synthesizes all the information into a cohesive investment analysis. The paragraph should flow naturally and incorporate specific data points, quotes, and insights from the sources. Include specific numbers, percentages, and facts mentioned in the articles. Reference the sources naturally within the text (e.g., "according to MarketWatch" or "as reported by Seeking Alpha"). 
-        
-        Make this a comprehensive, professional-grade analysis that an investor would find valuable, covering market sentiment, financial performance, recent developments, opportunities, risks, and investment outlook all in one well-crafted paragraph.
-        
-        Analysis:
-        """
-        
-        try:
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a professional financial analyst providing objective stock analysis based on recent news from reputable financial sources. Focus on key insights and actionable information."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=400,
-                temperature=0.6
-            )
+        for category, docs in categorized_docs.items():
+            if not docs:
+                continue
+                
+            # Prepare context from relevant documents
+            context = ""
+            for doc in docs:
+                context += f"Source: {doc['source']}\nHeadline: {doc['title']}\nContent: {doc['content']}\n\n"
             
-            analysis = response.choices[0].message.content.strip()
-            analysis += f"\n\n*Analysis based on recent reports from: {sources_list}*"
+            config = category_configs[category]
+            prompt = f"""
+            {config['prompt']}
             
-            return analysis
+            Recent Information:
+            {context}
             
-        except Exception as e:
-            return f"Error generating analysis: {str(e)}"
+            Write a focused analysis (150-200 words) that synthesizes the information for this specific category. Include specific data points, quotes, and insights from the sources. Reference the sources naturally within the text.
+            
+            Analysis:
+            """
+            
+            try:
+                response = self.openai_client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": f"You are a professional financial analyst providing objective analysis based on recent news from reputable financial sources. Focus on the specific category: {config['title']}."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=250,
+                    temperature=0.6
+                )
+                
+                analysis = response.choices[0].message.content.strip()
+                analyses[category] = {
+                    'title': config['title'],
+                    'icon': config['icon'],
+                    'content': analysis
+                }
+                
+            except Exception as e:
+                analyses[category] = {
+                    'title': config['title'],
+                    'icon': config['icon'],
+                    'content': f"Error generating analysis for this category: {str(e)}"
+                }
+        
+        analyses['sources'] = sources_list
+        return analyses
     
-    def analyze_stock(self, stock_symbol: str) -> str:
-        """Main method to analyze a stock symbol"""
+    def analyze_stock(self, stock_symbol: str) -> Dict:
+        """Main method to analyze a stock symbol with categorized analysis"""
         # Step 1: Retrieve news from financial sources
         news_articles = self.get_stock_news(stock_symbol)
         
         if not news_articles:
-            return f"No recent financial news found for {stock_symbol} from major financial sources. Please check the stock symbol and try again."
+            return {
+                'success': False, 
+                'error': f"No recent financial news found for {stock_symbol} from major financial sources. Please check the stock symbol and try again."
+            }
         
         # Step 2: Build vector index
         self.build_vector_index(news_articles)
         
         # Step 3: Retrieve relevant documents
         query = f"{stock_symbol} stock financial analysis market performance earnings revenue"
-        relevant_docs = self.retrieve_relevant_docs(query, k=min(8, len(news_articles)))
+        relevant_docs = self.retrieve_relevant_docs(query, k=min(len(news_articles), 12))
         
-        # Step 4: Generate analysis
-        analysis = self.generate_analysis(stock_symbol, relevant_docs)
+        # Step 4: Categorize documents
+        categorized_docs = self.categorize_documents(relevant_docs)
         
-        return analysis
+        # Step 5: Generate categorized analysis
+        categorized_analysis = self.generate_categorized_analysis(stock_symbol, categorized_docs)
+        
+        return {
+            'success': True,
+            'categories': categorized_analysis,
+            'total_articles': len(news_articles),
+            'relevant_articles': len(relevant_docs)
+        }

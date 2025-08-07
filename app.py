@@ -240,11 +240,51 @@ HTML = '''
             margin-bottom: 30px;
         }
         
+        .category-section {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            margin: 20px 0;
+            opacity: 0;
+            animation: slideUp 0.6s ease forwards;
+        }
+        
+        .category-header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .category-icon {
+            font-size: 24px;
+        }
+        
+        .category-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .category-content {
+            padding: 30px;
+        }
+        
+        .category-text {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #333;
+            text-align: justify;
+        }
+        
         .sources-section {
             background: #f8f9fa;
             padding: 25px;
             border-radius: 10px;
             border-left: 5px solid #00d4ff;
+            margin-top: 30px;
         }
         
         .sources-title {
@@ -257,6 +297,34 @@ HTML = '''
         .sources-list {
             color: #666;
             font-style: italic;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
         }
         
         .error {
@@ -340,11 +408,13 @@ HTML = '''
                 
                 if (data.success) {
                     const currentTime = new Date().toLocaleString();
-                    document.getElementById('output').innerHTML = `
+                    
+                    // Create main header
+                    let html = `
                         <div class="article-container">
                             <div class="article-header">
                                 <div class="stock-symbol">${stock}</div>
-                                <div class="article-title">Market Analysis Report</div>
+                                <div class="article-title">Comprehensive Market Analysis</div>
                                 <div class="article-meta">
                                     <div class="meta-item">
                                         <span>📅</span>
@@ -352,7 +422,7 @@ HTML = '''
                                     </div>
                                     <div class="meta-item">
                                         <span>🤖</span>
-                                        <span>AI-Generated Analysis</span>
+                                        <span>AI-Categorized Analysis</span>
                                     </div>
                                     <div class="meta-item">
                                         <span>📊</span>
@@ -360,15 +430,64 @@ HTML = '''
                                     </div>
                                 </div>
                             </div>
-                            <div class="article-body">
-                                <div class="analysis-text">${data.analysis}</div>
-                                <div class="sources-section">
-                                    <div class="sources-title">📰 Data Sources</div>
-                                    <div class="sources-list">Analysis based on real-time data from Yahoo Finance, MarketWatch, and Seeking Alpha</div>
-                                </div>
-                            </div>
                         </div>
                     `;
+                    
+                    // Add summary stats
+                    if (data.total_articles && data.relevant_articles) {
+                        html += `
+                            <div class="summary-stats">
+                                <div class="stat-item">
+                                    <span class="stat-number">${data.total_articles}</span>
+                                    <span class="stat-label">Articles Found</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">${data.relevant_articles}</span>
+                                    <span class="stat-label">Analyzed</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">${Object.keys(data.categories).length - 1}</span>
+                                    <span class="stat-label">Categories</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Add category sections
+                    const categoryOrder = ['expert_analysis', 'financial_performance', 'company_news', 'market_sentiment', 'risk_assessment'];
+                    
+                    categoryOrder.forEach((categoryKey, index) => {
+                        if (data.categories[categoryKey]) {
+                            const category = data.categories[categoryKey];
+                            setTimeout(() => {
+                                const categoryHtml = `
+                                    <div class="category-section">
+                                        <div class="category-header">
+                                            <div class="category-icon">${category.icon}</div>
+                                            <div class="category-title">${category.title}</div>
+                                        </div>
+                                        <div class="category-content">
+                                            <div class="category-text">${category.content}</div>
+                                        </div>
+                                    </div>
+                                `;
+                                document.getElementById('output').innerHTML += categoryHtml;
+                            }, index * 200); // Stagger animations
+                        }
+                    });
+                    
+                    // Add sources section at the end
+                    setTimeout(() => {
+                        const sourcesHtml = `
+                            <div class="sources-section">
+                                <div class="sources-title">📰 Data Sources</div>
+                                <div class="sources-list">Analysis based on real-time data from: ${data.categories.sources}</div>
+                            </div>
+                        `;
+                        document.getElementById('output').innerHTML += sourcesHtml;
+                    }, categoryOrder.length * 200);
+                    
+                    document.getElementById('output').innerHTML = html;
                 } else {
                     document.getElementById('output').innerHTML = `
                         <div class="error">
@@ -413,9 +532,9 @@ def analyze():
         
         # Run RAG analysis
         rag = StockRAGSystem()
-        analysis = rag.analyze_stock(symbol)
+        result = rag.analyze_stock(symbol)
         
-        return jsonify({'success': True, 'analysis': analysis})
+        return jsonify(result)
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
