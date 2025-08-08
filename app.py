@@ -7,156 +7,198 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Professional news-style HTML template
+# New York Times-style HTML template
 HTML = '''
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Financial News Hub - Stock Analysis</title>
+    <title>Financial Times - Stock Analysis</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body { 
             font-family: 'Georgia', 'Times New Roman', serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #fafafa;
             min-height: 100vh;
-            color: #333;
+            color: #111;
+            line-height: 1.4;
         }
         
-        .header {
-            background: #1a1a2e;
-            color: white;
+        .newspaper-header {
+            background: #fff;
+            border-bottom: 3px solid #000;
             padding: 20px 0;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         
-        .header-content {
+        .header-top {
             max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 12px;
+            margin-bottom: 10px;
         }
         
-        .logo {
-            font-size: 28px;
-            font-weight: bold;
-            color: #00d4ff;
+        .date-section {
+            color: #666;
         }
         
-        .tagline {
-            font-size: 14px;
-            color: #ccc;
-            font-style: italic;
+        .subscription-info {
+            color: #666;
         }
         
-        .search-container {
-            background: white;
-            padding: 40px 20px;
+        .masthead {
             text-align: center;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .newspaper-title {
+            font-family: 'Old English Text MT', 'Times New Roman', serif;
+            font-size: 48px;
+            font-weight: normal;
+            color: #000;
+            text-decoration: none;
+            letter-spacing: 2px;
+        }
+        
+        .newspaper-nav {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+        }
+        
+        .nav-item {
+            color: #000;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 5px 0;
+        }
+        
+        .nav-item:hover {
+            color: #666;
+        }
+        
+        .search-section {
+            background: #f8f8f8;
+            border-top: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            padding: 30px 20px;
+            text-align: center;
         }
         
         .search-title {
-            font-size: 36px;
-            color: #1a1a2e;
-            margin-bottom: 10px;
-            font-weight: 300;
+            font-size: 24px;
+            color: #000;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-family: 'Georgia', serif;
         }
         
         .search-subtitle {
             color: #666;
-            margin-bottom: 30px;
-            font-size: 18px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            font-style: italic;
         }
         
         .search-box {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 20px;
             flex-wrap: wrap;
         }
         
         .search-input {
-            padding: 15px 20px;
-            font-size: 18px;
-            border: 3px solid #e0e0e0;
-            border-radius: 8px;
-            width: 300px;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 0;
+            width: 250px;
             outline: none;
-            transition: all 0.3s ease;
+            font-family: 'Georgia', serif;
         }
         
         .search-input:focus {
-            border-color: #00d4ff;
-            box-shadow: 0 0 15px rgba(0,212,255,0.3);
+            border-color: #000;
         }
         
         .search-btn {
-            padding: 15px 30px;
-            font-size: 18px;
-            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            padding: 12px 20px;
+            font-size: 16px;
+            background: #000;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 0;
             cursor: pointer;
-            transition: all 0.3s ease;
+            font-family: 'Georgia', serif;
             font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .search-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,212,255,0.4);
+            background: #333;
         }
         
         .popular-stocks {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 15px;
             flex-wrap: wrap;
         }
         
         .stock-chip {
-            background: #f0f8ff;
-            color: #0066cc;
+            background: #fff;
+            color: #000;
             padding: 8px 16px;
-            border-radius: 20px;
+            border: 1px solid #ddd;
+            border-radius: 0;
             cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-            font-weight: 500;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .stock-chip:hover {
-            background: #0066cc;
+            background: #000;
             color: white;
-            transform: translateY(-1px);
         }
         
         .main-content {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 30px 20px;
+            background: #fff;
         }
         
         .loading {
-            background: white;
+            background: #f8f8f8;
             padding: 40px;
-            border-radius: 15px;
+            border: 1px solid #ddd;
             text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             margin: 20px 0;
         }
         
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #00d4ff;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #000;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 40px;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
@@ -166,165 +208,185 @@ HTML = '''
             100% { transform: rotate(360deg); }
         }
         
-        .article-container {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            margin: 20px 0;
-            opacity: 0;
-            animation: slideUp 0.6s ease forwards;
+        .newspaper-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
         }
         
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .article-header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-            padding: 30px;
-            position: relative;
-        }
-        
-        .article-header::before {
-            content: '';
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ffffff20' viewBox='0 0 100 100'%3E%3Cpath d='M20 20h60v60H20z'/%3E%3C/svg%3E") repeat;
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            opacity: 0.05;
-        }
-        
-        .stock-symbol {
-            font-size: 48px;
-            font-weight: bold;
-            color: #00d4ff;
-            margin-bottom: 5px;
-            position: relative;
-        }
-        
-        .article-title {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #fff;
-            position: relative;
-        }
-        
-        .article-meta {
-            display: flex;
-            gap: 20px;
-            font-size: 14px;
-            color: #ccc;
-            position: relative;
-        }
-        
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .article-body {
-            padding: 40px;
-        }
-        
-        .analysis-text {
-            font-size: 18px;
-            line-height: 1.8;
-            color: #333;
-            text-align: justify;
+        .main-story {
+            grid-column: 1 / 3;
+            border-bottom: 3px solid #000;
+            padding-bottom: 20px;
             margin-bottom: 30px;
         }
         
-        .category-section {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-            margin: 20px 0;
-            opacity: 0;
-            animation: slideUp 0.6s ease forwards;
-        }
-        
-        .category-header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: white;
-            padding: 20px 30px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .category-icon {
-            font-size: 24px;
-        }
-        
-        .category-title {
-            font-size: 20px;
+        .main-headline {
+            font-size: 36px;
             font-weight: bold;
+            line-height: 1.2;
+            margin-bottom: 15px;
+            color: #000;
+            font-family: 'Georgia', serif;
         }
         
-        .category-content {
-            padding: 30px;
+        .main-byline {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+            font-style: italic;
         }
         
-        .category-text {
-            font-size: 16px;
-            line-height: 1.7;
+        .article-date {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .story-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .story-column {
+            border-right: 1px solid #ddd;
+            padding-right: 20px;
+        }
+        
+        .story-column:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+        
+        .column-header {
+            font-size: 18px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .story-content {
+            font-size: 14px;
+            line-height: 1.6;
             color: #333;
             text-align: justify;
         }
         
+        .sidebar-story {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-headline {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #000;
+        }
+        
+        .sidebar-content {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #555;
+        }
+        
         .sources-section {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            border-left: 5px solid #00d4ff;
+            background: #f0f0f0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-top: 3px solid #000;
             margin-top: 30px;
         }
         
         .sources-title {
             font-weight: bold;
-            color: #1a1a2e;
+            color: #000;
             margin-bottom: 10px;
-            font-size: 16px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .sources-list {
             color: #666;
+            font-size: 12px;
             font-style: italic;
         }
         
-        .summary-stats {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
+        .stats-bar {
+            background: #000;
+            color: white;
+            padding: 15px;
             margin: 20px 0;
-            flex-wrap: wrap;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
         }
         
         .stat-item {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            text-align: center;
-            min-width: 120px;
+            flex: 1;
         }
         
         .stat-number {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
             display: block;
         }
         
         .stat-label {
-            font-size: 12px;
-            opacity: 0.9;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .newspaper-layout,
+            .story-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .main-story {
+                grid-column: 1;
+            }
+            
+            .story-column {
+                border-right: none;
+                padding-right: 0;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .story-column:last-child {
+                border-bottom: none;
+                margin-bottom: 0;
+            }
+            
+            .main-headline {
+                font-size: 28px;
+            }
+            
+            .newspaper-title {
+                font-size: 32px;
+            }
+            
+            .newspaper-nav {
+                flex-wrap: wrap;
+                gap: 15px;
+            }
         }
         
         .error {
@@ -347,22 +409,37 @@ HTML = '''
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div>
-                <div class="logo">📊 FinanceHub</div>
-                <div class="tagline">AI-Powered Market Intelligence</div>
+    <div class="newspaper-header">
+        <div class="header-top">
+            <div class="date-section">
+                <span id="current-date"></span>
             </div>
+            <div class="subscription-info">
+                Financial Analysis | AI-Powered Intelligence
+            </div>
+        </div>
+        
+        <div class="masthead">
+            <h1 class="newspaper-title">The Financial Times</h1>
+        </div>
+        
+        <div class="newspaper-nav">
+            <a href="#" class="nav-item">Markets</a>
+            <a href="#" class="nav-item">Analysis</a>
+            <a href="#" class="nav-item">Technology</a>
+            <a href="#" class="nav-item">Opinion</a>
+            <a href="#" class="nav-item">World</a>
+            <a href="#" class="nav-item">Business</a>
         </div>
     </div>
     
-    <div class="search-container">
-        <h1 class="search-title">Market Analysis Center</h1>
-        <p class="search-subtitle">Get comprehensive AI analysis of any stock with real-time data</p>
+    <div class="search-section">
+        <h2 class="search-title">Stock Analysis Center</h2>
+        <p class="search-subtitle">Get comprehensive AI analysis of any stock with real-time market data</p>
         
         <div class="search-box">
-            <input type="text" id="stock" class="search-input" placeholder="Enter stock symbol (e.g., AAPL, GOOGL)" />
-            <button onclick="analyze()" class="search-btn">Analyze Stock</button>
+            <input type="text" id="stock" class="search-input" placeholder="Enter stock symbol" />
+            <button onclick="analyze()" class="search-btn">Analyze</button>
         </div>
         
         <div class="popular-stocks">
@@ -380,6 +457,14 @@ HTML = '''
     </div>
 
     <script>
+        // Set current date
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
         function quickAnalyze(symbol) {
             document.getElementById('stock').value = symbol;
             analyze();
@@ -394,7 +479,7 @@ HTML = '''
                 <div class="loading">
                     <div class="spinner"></div>
                     <h3>Analyzing ${stock}...</h3>
-                    <p>Gathering data from Yahoo Finance, MarketWatch, and Seeking Alpha</p>
+                    <p>Gathering financial intelligence from multiple sources</p>
                 </div>
             `;
             
@@ -409,83 +494,158 @@ HTML = '''
                 if (data.success) {
                     const currentTime = new Date().toLocaleString();
                     
-                    // Create main header
+                    // Create newspaper-style layout
                     let html = `
-                        <div class="article-container">
-                            <div class="article-header">
-                                <div class="stock-symbol">${stock}</div>
-                                <div class="article-title">Comprehensive Market Analysis</div>
-                                <div class="article-meta">
-                                    <div class="meta-item">
-                                        <span>📅</span>
-                                        <span>Updated: ${currentTime}</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <span>🤖</span>
-                                        <span>AI-Categorized Analysis</span>
-                                    </div>
-                                    <div class="meta-item">
-                                        <span>📊</span>
-                                        <span>Real-time Data</span>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="main-story">
+                            <div class="article-date">${new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric', 
+                                month: 'long',
+                                day: 'numeric'
+                            })}</div>
+                            <h1 class="main-headline">${stock} Stock Analysis: ${data.quantitative_data ? data.quantitative_data.company_name : stock}</h1>
+                            <div class="main-byline">By Financial AI Analyst | Real-time market data analysis</div>
                         </div>
                     `;
                     
-                    // Add summary stats
-                    if (data.total_articles && data.relevant_articles) {
+                    // Add quantitative data bar
+                    if (data.quantitative_data) {
+                        const qData = data.quantitative_data;
+                        const changeColor = qData.price_change_1d >= 0 ? '#28a745' : '#dc3545';
+                        const marketCapFormatted = typeof qData.market_cap === 'number' ? 
+                            (qData.market_cap / 1e9).toFixed(1) + 'B' : qData.market_cap;
+                        
                         html += `
-                            <div class="summary-stats">
+                            <div class="stats-bar">
                                 <div class="stat-item">
-                                    <span class="stat-number">${data.total_articles}</span>
-                                    <span class="stat-label">Articles Found</span>
+                                    <span class="stat-number" style="color: ${changeColor}">$${qData.current_price}</span>
+                                    <span class="stat-label">Current Price</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-number">${data.relevant_articles}</span>
-                                    <span class="stat-label">Analyzed</span>
+                                    <span class="stat-number" style="color: ${changeColor}">${qData.price_change_1d > 0 ? '+' : ''}${qData.price_change_1d}%</span>
+                                    <span class="stat-label">1-Day Change</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-number">${Object.keys(data.categories).length - 1}</span>
-                                    <span class="stat-label">Categories</span>
+                                    <span class="stat-number">${qData.volatility}%</span>
+                                    <span class="stat-label">Volatility (Annual)</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">${marketCapFormatted}</span>
+                                    <span class="stat-label">Market Cap</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">${qData.pe_ratio !== 'N/A' ? qData.pe_ratio.toFixed(1) : 'N/A'}</span>
+                                    <span class="stat-label">P/E Ratio</span>
                                 </div>
                             </div>
                         `;
-                    }
-                    
-                    // Add category sections
-                    const categoryOrder = ['expert_analysis', 'financial_performance', 'company_news', 'market_sentiment', 'risk_assessment'];
-                    
-                    categoryOrder.forEach((categoryKey, index) => {
-                        if (data.categories[categoryKey]) {
-                            const category = data.categories[categoryKey];
-                            setTimeout(() => {
-                                const categoryHtml = `
-                                    <div class="category-section">
-                                        <div class="category-header">
-                                            <div class="category-icon">${category.icon}</div>
-                                            <div class="category-title">${category.title}</div>
-                                        </div>
-                                        <div class="category-content">
-                                            <div class="category-text">${category.content}</div>
+                        
+                        // Add detailed metrics section
+                        html += `
+                            <div style="background: #f8f8f8; padding: 20px; margin: 20px 0; border: 1px solid #ddd;">
+                                <h3 style="margin-bottom: 15px; text-align: center; font-size: 18px;">Key Financial Metrics</h3>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 16px; font-weight: bold;">52-Week Range</div>
+                                        <div style="color: #666;">$${qData.week_52_low} - $${qData.week_52_high}</div>
+                                        <div style="font-size: 12px; color: ${qData.pct_from_high < -10 ? '#28a745' : '#666'};">
+                                            ${qData.pct_from_high}% from high
                                         </div>
                                     </div>
-                                `;
-                                document.getElementById('output').innerHTML += categoryHtml;
-                            }, index * 200); // Stagger animations
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 16px; font-weight: bold;">Beta</div>
+                                        <div style="color: #666;">${qData.beta !== 'N/A' ? qData.beta.toFixed(2) : 'N/A'}</div>
+                                        <div style="font-size: 12px; color: #999;">Market volatility</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 16px; font-weight: bold;">Dividend Yield</div>
+                                        <div style="color: #666;">${qData.dividend_yield.toFixed(2)}%</div>
+                                        <div style="font-size: 12px; color: #999;">Annual dividend</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 16px; font-weight: bold;">EPS</div>
+                                        <div style="color: #666;">${qData.eps !== 'N/A' ? '$' + qData.eps.toFixed(2) : 'N/A'}</div>
+                                        <div style="font-size: 12px; color: #999;">Earnings per share</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 16px; font-weight: bold;">Avg Volume</div>
+                                        <div style="color: #666;">${(qData.volume_avg / 1e6).toFixed(1)}M</div>
+                                        <div style="font-size: 12px; color: #999;">Daily trading volume</div>
+                                    </div>
+                                </div>
+                                ${qData.sector !== 'N/A' ? `
+                                    <div style="text-align: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                                        <strong>Sector:</strong> ${qData.sector} | <strong>Industry:</strong> ${qData.industry}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    } else {
+                        // Fallback stats bar for news-only analysis
+                        if (data.total_articles && data.relevant_articles) {
+                            html += `
+                                <div class="stats-bar">
+                                    <div class="stat-item">
+                                        <span class="stat-number">${data.total_articles}</span>
+                                        <span class="stat-label">Sources Analyzed</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">${data.relevant_articles}</span>
+                                        <span class="stat-label">Key Articles</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-number">${Object.keys(data.categories).length - 1}</span>
+                                        <span class="stat-label">Analysis Sections</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // Create three-column newspaper layout
+                    html += '<div class="story-grid">';
+                    
+                    const categoryData = [
+                        {key: 'expert_analysis', title: 'Expert Analysis', position: 'left'},
+                        {key: 'financial_performance', title: 'Financial Performance', position: 'center'},
+                        {key: 'company_news', title: 'Company News', position: 'right'}
+                    ];
+                    
+                    categoryData.forEach((cat, index) => {
+                        if (data.categories[cat.key]) {
+                            const category = data.categories[cat.key];
+                            html += `
+                                <div class="story-column">
+                                    <div class="column-header">${category.title}</div>
+                                    <div class="story-content">${category.content}</div>
+                                </div>
+                            `;
                         }
                     });
                     
-                    // Add sources section at the end
-                    setTimeout(() => {
-                        const sourcesHtml = `
-                            <div class="sources-section">
-                                <div class="sources-title">📰 Data Sources</div>
-                                <div class="sources-list">Analysis based on real-time data from: ${data.categories.sources}</div>
-                            </div>
-                        `;
-                        document.getElementById('output').innerHTML += sourcesHtml;
-                    }, categoryOrder.length * 200);
+                    html += '</div>'; // Close story-grid
+                    
+                    // Add sidebar stories for remaining categories
+                    const sidebarCategories = ['market_sentiment', 'risk_assessment'];
+                    sidebarCategories.forEach(categoryKey => {
+                        if (data.categories[categoryKey]) {
+                            const category = data.categories[categoryKey];
+                            html += `
+                                <div class="sidebar-story">
+                                    <div class="sidebar-headline">${category.title}</div>
+                                    <div class="sidebar-content">${category.content}</div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    // Add sources section
+                    html += `
+                        <div class="sources-section">
+                            <div class="sources-title">Sources</div>
+                            <div class="sources-list">Analysis compiled from: ${data.categories.sources}</div>
+                        </div>
+                    `;
                     
                     document.getElementById('output').innerHTML = html;
                 } else {

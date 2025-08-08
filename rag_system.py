@@ -8,7 +8,9 @@ from typing import List, Dict
 from bs4 import BeautifulSoup
 import time
 import re
+import json
 from datetime import datetime
+import yfinance as yf
 
 class StockRAGSystem:
     def __init__(self):
@@ -498,8 +500,8 @@ class StockRAGSystem:
         
         return categories
 
-    def generate_categorized_analysis(self, stock_symbol: str, categorized_docs: Dict[str, List[Dict]]) -> Dict[str, str]:
-        """Generate analysis for each category"""
+    def generate_categorized_analysis(self, stock_symbol: str, categorized_docs: Dict[str, List[Dict]], quant_data: Dict = None) -> Dict[str, str]:
+        """Generate analysis for each category, incorporating quantitative data where relevant"""
         analyses = {}
         sources_used = set()
         
@@ -510,31 +512,46 @@ class StockRAGSystem:
         
         sources_list = ", ".join(sources_used)
         
+        # Prepare quantitative context
+        quant_context = ""
+        if quant_data:
+            quant_context = f"""
+            Current Quantitative Metrics for {stock_symbol}:
+            - Current Price: ${quant_data['current_price']} ({quant_data['price_change_1d']:+.2f}% today)
+            - Volatility: {quant_data['volatility']:.1f}% (annualized)
+            - Market Cap: {quant_data['market_cap']}
+            - P/E Ratio: {quant_data['pe_ratio']}
+            - 52-Week Range: ${quant_data['week_52_low']} - ${quant_data['week_52_high']} ({quant_data['pct_from_high']:+.1f}% from high)
+            - Beta: {quant_data['beta']} (market sensitivity)
+            - Dividend Yield: {quant_data['dividend_yield']:.2f}%
+            - Sector/Industry: {quant_data['sector']} / {quant_data['industry']}
+            """
+        
         # Category configurations
         category_configs = {
             'expert_analysis': {
                 'title': 'Expert Analysis & Outlook',
-                'prompt': f"Based on analyst reports and expert opinions about {stock_symbol}, provide a comprehensive expert analysis focusing on professional recommendations, target prices, ratings, and investment outlook. Include specific analyst views and price targets where mentioned.",
+                'prompt': f"Based on analyst reports and expert opinions about {stock_symbol}, provide a comprehensive expert analysis focusing on professional recommendations, target prices, ratings, and investment outlook. {quant_context}Consider how current metrics align with analyst expectations and recommendations.",
                 'icon': '🎯'
             },
             'company_news': {
                 'title': 'Latest Company News',
-                'prompt': f"Based on recent company news about {stock_symbol}, summarize the most important developments, announcements, partnerships, and corporate actions. Focus on how these developments might impact the company's future.",
+                'prompt': f"Based on recent company news about {stock_symbol}, summarize the most important developments, announcements, partnerships, and corporate actions. {quant_context}Consider how these developments might impact the company's financial metrics and stock performance.",
                 'icon': '📰'
             },
             'financial_performance': {
                 'title': 'Financial Performance',
-                'prompt': f"Based on financial data and earnings reports for {stock_symbol}, analyze the company's financial performance including revenue, earnings, profitability metrics, and financial health indicators.",
+                'prompt': f"Based on financial data and earnings reports for {stock_symbol}, analyze the company's financial performance. {quant_context}Integrate the quantitative metrics with earnings data, revenue trends, and profitability analysis from the news sources.",
                 'icon': '📊'
             },
             'market_sentiment': {
                 'title': 'Market Sentiment',
-                'prompt': f"Based on market commentary about {stock_symbol}, analyze the overall market sentiment, investor confidence, and market expectations. Include any mentions of bullish/bearish sentiment.",
+                'prompt': f"Based on market commentary about {stock_symbol}, analyze the overall market sentiment and investor confidence. {quant_context}Consider how current price movements, volatility, and trading patterns reflect market sentiment.",
                 'icon': '📈'
             },
             'risk_assessment': {
                 'title': 'Risk Assessment',
-                'prompt': f"Based on risk-related information about {stock_symbol}, identify and analyze potential risks, challenges, concerns, and threats facing the company. Include both short-term and long-term risk factors.",
+                'prompt': f"Based on risk-related information about {stock_symbol}, identify and analyze potential risks and challenges. {quant_context}Consider quantitative risk indicators like volatility, beta, and proximity to 52-week highs/lows in your assessment.",
                 'icon': '⚠️'
             }
         }
@@ -555,7 +572,7 @@ class StockRAGSystem:
             Recent Information:
             {context}
             
-            Write a focused analysis (150-200 words) that synthesizes the information for this specific category. Include specific data points, quotes, and insights from the sources. Reference the sources naturally within the text.
+            Write a focused analysis (150-200 words) that synthesizes both the news information and quantitative data for this specific category. Include specific data points, quotes, and insights from the sources. Reference both news sources and quantitative metrics naturally within the text.
             
             Analysis:
             """
@@ -564,7 +581,7 @@ class StockRAGSystem:
                 response = self.openai_client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": f"You are a professional financial analyst providing objective analysis based on recent news from reputable financial sources. Focus on the specific category: {config['title']}."},
+                        {"role": "system", "content": f"You are a professional financial analyst providing objective analysis based on recent news and quantitative data. Focus on the specific category: {config['title']}."},
                         {"role": "user", "content": prompt}
                     ],
                     max_tokens=250,
@@ -588,33 +605,91 @@ class StockRAGSystem:
         analyses['sources'] = sources_list
         return analyses
     
+    def get_quantitative_data(self, stock_symbol: str) -> Dict:
+        """Get quantitative stock data using yfinance"""
+        try:
+            ticker = yf.Ticker(stock_symbol)
+            info = ticker.info
+            hist = ticker.history(period="1y")
+            
+            if hist.empty:
+                return None
+                
+            current_price = hist['Close'].iloc[-1] if not hist.empty else info.get('currentPrice', 0)
+            
+            # Calculate metrics
+            volatility = hist['Close'].pct_change().std() * np.sqrt(252) * 100  # Annualized volatility
+            volume_avg = hist['Volume'].mean()
+            price_change_1d = ((hist['Close'].iloc[-1] - hist['Close'].iloc[-2]) / hist['Close'].iloc[-2] * 100) if len(hist) > 1 else 0
+            
+            # 52-week high/low
+            week_52_high = hist['High'].max()
+            week_52_low = hist['Low'].min()
+            
+            # Calculate percentage from 52-week high/low
+            pct_from_high = ((current_price - week_52_high) / week_52_high * 100)
+            pct_from_low = ((current_price - week_52_low) / week_52_low * 100)
+            
+            return {
+                'current_price': round(current_price, 2),
+                'price_change_1d': round(price_change_1d, 2),
+                'volatility': round(volatility, 2),
+                'volume_avg': int(volume_avg),
+                'week_52_high': round(week_52_high, 2),
+                'week_52_low': round(week_52_low, 2),
+                'pct_from_high': round(pct_from_high, 2),
+                'pct_from_low': round(pct_from_low, 2),
+                'market_cap': info.get('marketCap', 'N/A'),
+                'pe_ratio': info.get('forwardPE', info.get('trailingPE', 'N/A')),
+                'dividend_yield': info.get('dividendYield', 0) * 100 if info.get('dividendYield') else 0,
+                'beta': info.get('beta', 'N/A'),
+                'eps': info.get('trailingEps', 'N/A'),
+                'book_value': info.get('bookValue', 'N/A'),
+                'debt_to_equity': info.get('debtToEquity', 'N/A'),
+                'roe': info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else 'N/A',
+                'sector': info.get('sector', 'N/A'),
+                'industry': info.get('industry', 'N/A'),
+                'company_name': info.get('longName', stock_symbol)
+            }
+        except Exception as e:
+            print(f"Error fetching quantitative data: {e}")
+            return None
+
     def analyze_stock(self, stock_symbol: str) -> Dict:
         """Main method to analyze a stock symbol with categorized analysis"""
-        # Step 1: Retrieve news from financial sources
+        # Step 1: Get quantitative data
+        quant_data = self.get_quantitative_data(stock_symbol)
+        
+        # Step 2: Retrieve news from financial sources
         news_articles = self.get_stock_news(stock_symbol)
         
-        if not news_articles:
+        if not news_articles and not quant_data:
             return {
                 'success': False, 
-                'error': f"No recent financial news found for {stock_symbol} from major financial sources. Please check the stock symbol and try again."
+                'error': f"No data found for {stock_symbol}. Please check the stock symbol and try again."
             }
         
-        # Step 2: Build vector index
-        self.build_vector_index(news_articles)
-        
-        # Step 3: Retrieve relevant documents
-        query = f"{stock_symbol} stock financial analysis market performance earnings revenue"
-        relevant_docs = self.retrieve_relevant_docs(query, k=min(len(news_articles), 12))
-        
-        # Step 4: Categorize documents
-        categorized_docs = self.categorize_documents(relevant_docs)
-        
-        # Step 5: Generate categorized analysis
-        categorized_analysis = self.generate_categorized_analysis(stock_symbol, categorized_docs)
+        # Step 3: Build vector index (only if we have news)
+        if news_articles:
+            self.build_vector_index(news_articles)
+            
+            # Step 4: Retrieve relevant documents
+            query = f"{stock_symbol} stock financial analysis market performance earnings revenue"
+            relevant_docs = self.retrieve_relevant_docs(query, k=min(len(news_articles), 12))
+            
+            # Step 5: Categorize documents
+            categorized_docs = self.categorize_documents(relevant_docs)
+            
+            # Step 6: Generate categorized analysis
+            categorized_analysis = self.generate_categorized_analysis(stock_symbol, categorized_docs, quant_data)
+        else:
+            relevant_docs = []
+            categorized_analysis = {}
         
         return {
             'success': True,
+            'quantitative_data': quant_data,
             'categories': categorized_analysis,
-            'total_articles': len(news_articles),
+            'total_articles': len(news_articles) if news_articles else 0,
             'relevant_articles': len(relevant_docs)
         }
